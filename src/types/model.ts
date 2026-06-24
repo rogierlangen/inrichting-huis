@@ -1,49 +1,31 @@
-export interface Point {
-  x: number; // meters
-  y: number; // meters
+export interface Floor {
+  id: string;
+  name: string;
 }
 
 export interface Room {
   id: string;
-  name: string;
   floorId: string;
-  points: Point[]; // polygon, in meters, clockwise
-  wallHeight: number; // meters
-  color?: string;
+  name: string;
+  widthM: number;
+  lengthM: number;
+  photoSrc?: string; // foto van de lege kamer, bron van waarheid voor het aanzicht
 }
 
-export interface FurnitureItem {
+export interface FurniturePlacement {
   id: string;
-  floorId: string;
+  roomId: string;
   name: string;
-  x: number;
-  y: number;
-  width: number;
-  depth: number;
-  height: number;
-  rotation: number; // degrees
-  color?: string;
-}
-
-export interface FloorPlanImage {
-  floorId: string;
-  src: string; // data URL
-  x: number; // meters, top-left position
-  y: number;
-  width: number; // meters
-  height: number;
-  opacity: number;
-}
-
-export interface Floor {
-  id: string;
-  name: string;
-  elevation: number; // meters, height of floor above ground
+  color: string;
+  xPct: number; // center, 0-100, relatief aan de foto
+  yPct: number; // center, 0-100, relatief aan de foto
+  widthPct: number; // 0-100, relatief aan fotobreedte
+  heightPct: number; // 0-100, relatief aan fotohoogte
+  rotation: number; // graden
 }
 
 export interface HouseModel {
   floors: Floor[];
   rooms: Room[];
-  furniture: FurnitureItem[];
-  images: FloorPlanImage[];
+  placements: FurniturePlacement[];
 }

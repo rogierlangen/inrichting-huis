@@ -1,23 +1,23 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { FloorPlanImage, FurnitureItem, HouseModel, Room } from '../types/model';
+import type { FurniturePlacement, HouseModel, Room } from '../types/model';
 import { initialModel } from '../data/initialModel';
 
 interface HouseState extends HouseModel {
   activeFloorId: string;
   selectedRoomId: string | null;
-  selectedFurnitureId: string | null;
+  selectedPlacementId: string | null;
+  showFurniture: boolean;
   setActiveFloor: (floorId: string) => void;
   selectRoom: (id: string | null) => void;
-  selectFurniture: (id: string | null) => void;
-  updateRoom: (id: string, updates: Partial<Room>) => void;
+  selectPlacement: (id: string | null) => void;
+  setShowFurniture: (show: boolean) => void;
   addRoom: (room: Room) => void;
+  updateRoom: (id: string, updates: Partial<Room>) => void;
   removeRoom: (id: string) => void;
-  addFurniture: (item: FurnitureItem) => void;
-  updateFurniture: (id: string, updates: Partial<FurnitureItem>) => void;
-  removeFurniture: (id: string) => void;
-  setFloorImage: (image: FloorPlanImage) => void;
-  loadModel: (model: HouseModel) => void;
+  addPlacement: (placement: FurniturePlacement) => void;
+  updatePlacement: (id: string, updates: Partial<FurniturePlacement>) => void;
+  removePlacement: (id: string) => void;
 }
 
 export const useHouseStore = create<HouseState>()(
@@ -26,45 +26,41 @@ export const useHouseStore = create<HouseState>()(
       ...initialModel,
       activeFloorId: initialModel.floors[0].id,
       selectedRoomId: null,
-      selectedFurnitureId: null,
+      selectedPlacementId: null,
+      showFurniture: true,
 
-      setActiveFloor: (floorId) => set({ activeFloorId: floorId, selectedRoomId: null, selectedFurnitureId: null }),
-      selectRoom: (id) => set({ selectedRoomId: id, selectedFurnitureId: null }),
-      selectFurniture: (id) => set({ selectedFurnitureId: id, selectedRoomId: null }),
+      setActiveFloor: (floorId) => set({ activeFloorId: floorId, selectedRoomId: null, selectedPlacementId: null }),
+      selectRoom: (id) => set({ selectedRoomId: id, selectedPlacementId: null }),
+      selectPlacement: (id) => set({ selectedPlacementId: id }),
+      setShowFurniture: (show) => set({ showFurniture: show }),
+
+      addRoom: (room) => set((state) => ({ rooms: [...state.rooms, room] })),
 
       updateRoom: (id, updates) =>
         set((state) => ({
           rooms: state.rooms.map((r) => (r.id === id ? { ...r, ...updates } : r)),
         })),
 
-      addRoom: (room) => set((state) => ({ rooms: [...state.rooms, room] })),
-
       removeRoom: (id) =>
         set((state) => ({
           rooms: state.rooms.filter((r) => r.id !== id),
+          placements: state.placements.filter((p) => p.roomId !== id),
           selectedRoomId: null,
         })),
 
-      addFurniture: (item) => set((state) => ({ furniture: [...state.furniture, item] })),
+      addPlacement: (placement) => set((state) => ({ placements: [...state.placements, placement] })),
 
-      updateFurniture: (id, updates) =>
+      updatePlacement: (id, updates) =>
         set((state) => ({
-          furniture: state.furniture.map((f) => (f.id === id ? { ...f, ...updates } : f)),
+          placements: state.placements.map((p) => (p.id === id ? { ...p, ...updates } : p)),
         })),
 
-      removeFurniture: (id) =>
+      removePlacement: (id) =>
         set((state) => ({
-          furniture: state.furniture.filter((f) => f.id !== id),
-          selectedFurnitureId: null,
+          placements: state.placements.filter((p) => p.id !== id),
+          selectedPlacementId: null,
         })),
-
-      setFloorImage: (image) =>
-        set((state) => ({
-          images: [...state.images.filter((i) => i.floorId !== image.floorId), image],
-        })),
-
-      loadModel: (model) => set({ ...model, activeFloorId: model.floors[0]?.id ?? '' }),
     }),
-    { name: 'inrichting-huis-model' }
+    { name: 'inrichting-huis-model-v2' }
   )
 );
