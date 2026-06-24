@@ -30,17 +30,16 @@ function poly(id: string, name: string, floorId: string, points: { x: number; y:
 
 const rooms: Room[] = [
   // ---- Begane grond ----
-  rect('entree', 'Entree', GF, 0, 0, 1.8, 2.6, 2.58, '#f6d98a'),
-  rect('voorkamer', 'Voorkamer', GF, 1.8, 0, 4.4, 2.6, 2.58, '#f3c98f'),
-  rect('kast-voor', 'Kast', GF, 6.2, 0, 0.8, 1.3, 2.4, '#e3d8c2'),
-  rect('bedstede', 'Bedstede', GF, 6.2, 1.3, 0.8, 1.3, 2.4, '#e3d8c2'),
+  rect('voorkamer', 'Voorkamer', GF, 0, 0, 4.6, 2.6, 2.58, '#f3c98f'),
+  rect('entree', 'Entree', GF, 4.6, 0, 2.4, 2.6, 2.58, '#f6d98a'),
 
   rect('woonkamer', 'Woonkamer', GF, 0, 2.6, 7.0, 4.6, 2.7, '#f0d6a8'),
+  rect('bedstede', 'Bedstede', GF, 6.2, 2.6, 0.8, 1.3, 2.4, '#e3d8c2'),
 
-  rect('eetkamer', 'Eetkamer', GF, 0, 7.2, 3.0, 3.0, 3.03, '#efd9a8'),
+  rect('keuken', 'Keuken', GF, 0, 7.2, 3.0, 3.0, 2.59, '#cfe0ef'),
   rect('hal', 'Hal / trap', GF, 3.0, 7.2, 2.0, 3.0, 2.6, '#e8e8e8'),
   rect('bijkeuken', 'Bijkeuken', GF, 5.0, 7.2, 2.4, 1.5, 2.4, '#e3e3e3'),
-  rect('keuken', 'Keuken', GF, 5.0, 8.7, 2.4, 2.0, 2.59, '#cfe0ef'),
+  rect('eetkamer', 'Eetkamer', GF, 5.0, 8.7, 2.4, 2.0, 3.03, '#efd9a8'),
   rect('berging-1', 'Berging', GF, 7.4, 7.2, 1.4, 3.5, 2.71, '#d8cdb8'),
 
   rect('overkapping', 'Overkapping', GF, 3.0, 10.7, 3.5, 2.3, 2.17, '#dcdcdc'),
