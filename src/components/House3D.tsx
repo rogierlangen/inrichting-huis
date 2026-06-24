@@ -3,7 +3,22 @@ import { OrbitControls } from '@react-three/drei';
 import { useHouseStore } from '../store/useHouseStore';
 import * as THREE from 'three';
 import { useMemo } from 'react';
-import type { Room, FurnitureItem, Floor } from '../types/model';
+import type { Room, FurnitureItem, Floor, FloorPlanImage } from '../types/model';
+
+function FloorPlanTexture({ image, elevation }: { image: FloorPlanImage; elevation: number }) {
+  const texture = useMemo(() => new THREE.TextureLoader().load(image.src), [image.src]);
+  const centerX = image.x + image.width / 2;
+  const centerY = image.y + image.height / 2;
+  return (
+    <mesh
+      position={[centerX, elevation + 0.01, centerY]}
+      rotation={[-Math.PI / 2, 0, 0]}
+    >
+      <planeGeometry args={[image.width, image.height]} />
+      <meshBasicMaterial map={texture} transparent opacity={image.opacity} side={THREE.DoubleSide} />
+    </mesh>
+  );
+}
 
 function RoomMesh({ room, elevation }: { room: Room; elevation: number }) {
   const shape = useMemo(() => {
@@ -70,12 +85,13 @@ function FloorGroup({ floor }: { floor: Floor }) {
   const furniture = useHouseStore((s) =>
     s.furniture.filter((f) => rooms.some((r) => r.id === f.roomId))
   );
+  const floorImage = useHouseStore((s) => s.images.find((i) => i.floorId === floor.id));
 
   return (
     <group>
-      {rooms.map((room) => (
-        <RoomMesh key={room.id} room={room} elevation={floor.elevation} />
-      ))}
+      {floorImage && <FloorPlanTexture image={floorImage} elevation={floor.elevation} />}
+      {!floorImage &&
+        rooms.map((room) => <RoomMesh key={room.id} room={room} elevation={floor.elevation} />)}
       {furniture.map((item) => (
         <FurnitureMesh key={item.id} item={item} elevation={floor.elevation} />
       ))}

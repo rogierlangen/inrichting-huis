@@ -26,6 +26,7 @@ export function FloorPlan2D() {
   const [drag, setDrag] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
   const [calibrating, setCalibrating] = useState(false);
   const [calPoints, setCalPoints] = useState<{ x: number; y: number }[]>([]);
+  const [showRooms, setShowRooms] = useState(true);
 
   const floorRooms = useMemo(() => rooms.filter((r) => r.floorId === activeFloorId), [rooms, activeFloorId]);
   const floorFurniture = useMemo(
@@ -36,6 +37,12 @@ export function FloorPlan2D() {
 
   const bounds = useMemo(() => {
     const allPoints = floorRooms.flatMap((r) => r.points);
+    if (floorImage) {
+      allPoints.push(
+        { x: floorImage.x, y: floorImage.y },
+        { x: floorImage.x + floorImage.width, y: floorImage.y + floorImage.height }
+      );
+    }
     if (allPoints.length === 0) return { minX: 0, minY: 0, maxX: 10, maxY: 10 };
     return {
       minX: Math.min(...allPoints.map((p) => p.x)) - 1,
@@ -43,7 +50,7 @@ export function FloorPlan2D() {
       maxX: Math.max(...allPoints.map((p) => p.x)) + 1,
       maxY: Math.max(...allPoints.map((p) => p.y)) + 1,
     };
-  }, [floorRooms]);
+  }, [floorRooms, floorImage]);
 
   const width = (bounds.maxX - bounds.minX) * PX_PER_METER;
   const height = (bounds.maxY - bounds.minY) * PX_PER_METER;
@@ -68,8 +75,9 @@ export function FloorPlan2D() {
         y: bounds.minY,
         width: bounds.maxX - bounds.minX,
         height: bounds.maxY - bounds.minY,
-        opacity: 0.6,
+        opacity: 1,
       });
+      setShowRooms(false);
     };
     reader.readAsDataURL(file);
   }
@@ -121,6 +129,12 @@ export function FloorPlan2D() {
             {calibrating ? 'Klik twee punten op de afbeelding...' : 'Schaal calibreren'}
           </button>
         )}
+        {floorImage && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
+            <input type="checkbox" checked={showRooms} onChange={(e) => setShowRooms(e.target.checked)} />
+            Kamer-vlakken tonen
+          </label>
+        )}
       </div>
       <svg
         ref={svgRef}
@@ -144,27 +158,28 @@ export function FloorPlan2D() {
           />
         )}
 
-        {floorRooms.map((room) => {
-          const translated = room.points.map((p) => ({ x: p.x - bounds.minX, y: p.y - bounds.minY }));
-          const centroid = {
-            x: translated.reduce((s, p) => s + p.x, 0) / translated.length,
-            y: translated.reduce((s, p) => s + p.y, 0) / translated.length,
-          };
-          return (
-            <g key={room.id} onClick={() => selectRoom(room.id)} style={{ cursor: 'pointer' }}>
-              <polygon
-                points={polygonToPoints(translated)}
-                fill={room.color ?? '#eee'}
-                stroke={selectedRoomId === room.id ? '#1a73e8' : '#333'}
-                strokeWidth={selectedRoomId === room.id ? 2 : 1}
-                opacity={floorImage ? 0.55 : 0.9}
-              />
-              <text x={centroid.x * PX_PER_METER} y={centroid.y * PX_PER_METER} fontSize={12} textAnchor="middle" fill="#222">
-                {room.name}
-              </text>
-            </g>
-          );
-        })}
+        {showRooms &&
+          floorRooms.map((room) => {
+            const translated = room.points.map((p) => ({ x: p.x - bounds.minX, y: p.y - bounds.minY }));
+            const centroid = {
+              x: translated.reduce((s, p) => s + p.x, 0) / translated.length,
+              y: translated.reduce((s, p) => s + p.y, 0) / translated.length,
+            };
+            return (
+              <g key={room.id} onClick={() => selectRoom(room.id)} style={{ cursor: 'pointer' }}>
+                <polygon
+                  points={polygonToPoints(translated)}
+                  fill={room.color ?? '#eee'}
+                  stroke={selectedRoomId === room.id ? '#1a73e8' : '#333'}
+                  strokeWidth={selectedRoomId === room.id ? 2 : 1}
+                  opacity={floorImage ? 0.35 : 0.9}
+                />
+                <text x={centroid.x * PX_PER_METER} y={centroid.y * PX_PER_METER} fontSize={12} textAnchor="middle" fill="#222">
+                  {room.name}
+                </text>
+              </g>
+            );
+          })}
 
         {floorFurniture.map((item) => {
           const x = (item.x - bounds.minX) * PX_PER_METER;
