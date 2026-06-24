@@ -2,10 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 import { useHouseStore } from '../store/useHouseStore';
 import type { FurnitureItem } from '../types/model';
 
-const PX_PER_METER = 40;
-
-function polygonToPoints(points: { x: number; y: number }[]) {
-  return points.map((p) => `${p.x * PX_PER_METER},${p.y * PX_PER_METER}`).join(' ');
+function polygonToPoints(points: { x: number; y: number }[], pxPerMeter: number) {
+  return points.map((p) => `${p.x * pxPerMeter},${p.y * pxPerMeter}`).join(' ');
 }
 
 export function FloorPlan2D() {
@@ -27,6 +25,7 @@ export function FloorPlan2D() {
   const [calibrating, setCalibrating] = useState(false);
   const [calPoints, setCalPoints] = useState<{ x: number; y: number }[]>([]);
   const [showRooms, setShowRooms] = useState(true);
+  const [pxPerMeter, setPxPerMeter] = useState(60);
 
   const floorRooms = useMemo(() => rooms.filter((r) => r.floorId === activeFloorId), [rooms, activeFloorId]);
   const floorFurniture = useMemo(
@@ -52,14 +51,14 @@ export function FloorPlan2D() {
     };
   }, [floorRooms, floorImage]);
 
-  const width = (bounds.maxX - bounds.minX) * PX_PER_METER;
-  const height = (bounds.maxY - bounds.minY) * PX_PER_METER;
+  const width = (bounds.maxX - bounds.minX) * pxPerMeter;
+  const height = (bounds.maxY - bounds.minY) * pxPerMeter;
 
   function toLocalMeters(clientX: number, clientY: number) {
     const svg = svgRef.current!;
     const rect = svg.getBoundingClientRect();
-    const x = (clientX - rect.left) / PX_PER_METER + bounds.minX;
-    const y = (clientY - rect.top) / PX_PER_METER + bounds.minY;
+    const x = (clientX - rect.left) / pxPerMeter + bounds.minX;
+    const y = (clientY - rect.top) / pxPerMeter + bounds.minY;
     return { x, y };
   }
 
@@ -68,16 +67,23 @@ export function FloorPlan2D() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      setFloorImage({
-        floorId: activeFloorId,
-        src: reader.result as string,
-        x: bounds.minX,
-        y: bounds.minY,
-        width: bounds.maxX - bounds.minX,
-        height: bounds.maxY - bounds.minY,
-        opacity: 1,
-      });
-      setShowRooms(false);
+      const src = reader.result as string;
+      const img = new window.Image();
+      img.onload = () => {
+        const widthMeters = 10;
+        const heightMeters = widthMeters * (img.naturalHeight / img.naturalWidth);
+        setFloorImage({
+          floorId: activeFloorId,
+          src,
+          x: 0,
+          y: 0,
+          width: widthMeters,
+          height: heightMeters,
+          opacity: 1,
+        });
+        setShowRooms(false);
+      };
+      img.src = src;
     };
     reader.readAsDataURL(file);
   }
@@ -135,6 +141,11 @@ export function FloorPlan2D() {
             Kamer-vlakken tonen
           </label>
         )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+          <button onClick={() => setPxPerMeter((z) => Math.max(10, z - 10))}>−</button>
+          <span style={{ fontSize: 13 }}>{Math.round((pxPerMeter / 60) * 100)}%</span>
+          <button onClick={() => setPxPerMeter((z) => Math.min(200, z + 10))}>+</button>
+        </div>
       </div>
       <svg
         ref={svgRef}
@@ -150,10 +161,10 @@ export function FloorPlan2D() {
         {floorImage && (
           <image
             href={floorImage.src}
-            x={(floorImage.x - bounds.minX) * PX_PER_METER}
-            y={(floorImage.y - bounds.minY) * PX_PER_METER}
-            width={floorImage.width * PX_PER_METER}
-            height={floorImage.height * PX_PER_METER}
+            x={(floorImage.x - bounds.minX) * pxPerMeter}
+            y={(floorImage.y - bounds.minY) * pxPerMeter}
+            width={floorImage.width * pxPerMeter}
+            height={floorImage.height * pxPerMeter}
             opacity={floorImage.opacity}
           />
         )}
@@ -168,13 +179,13 @@ export function FloorPlan2D() {
             return (
               <g key={room.id} onClick={() => selectRoom(room.id)} style={{ cursor: 'pointer' }}>
                 <polygon
-                  points={polygonToPoints(translated)}
+                  points={polygonToPoints(translated, pxPerMeter)}
                   fill={room.color ?? '#eee'}
                   stroke={selectedRoomId === room.id ? '#1a73e8' : '#333'}
                   strokeWidth={selectedRoomId === room.id ? 2 : 1}
                   opacity={floorImage ? 0.35 : 0.9}
                 />
-                <text x={centroid.x * PX_PER_METER} y={centroid.y * PX_PER_METER} fontSize={12} textAnchor="middle" fill="#222">
+                <text x={centroid.x * pxPerMeter} y={centroid.y * pxPerMeter} fontSize={12} textAnchor="middle" fill="#222">
                   {room.name}
                 </text>
               </g>
@@ -182,10 +193,10 @@ export function FloorPlan2D() {
           })}
 
         {floorFurniture.map((item) => {
-          const x = (item.x - bounds.minX) * PX_PER_METER;
-          const y = (item.y - bounds.minY) * PX_PER_METER;
-          const w = item.width * PX_PER_METER;
-          const d = item.depth * PX_PER_METER;
+          const x = (item.x - bounds.minX) * pxPerMeter;
+          const y = (item.y - bounds.minY) * pxPerMeter;
+          const w = item.width * pxPerMeter;
+          const d = item.depth * pxPerMeter;
           return (
             <g
               key={item.id}
