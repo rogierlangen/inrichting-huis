@@ -11,6 +11,8 @@ interface HouseState extends HouseModel {
   selectRoom: (id: string | null) => void;
   selectFurniture: (id: string | null) => void;
   updateRoom: (id: string, updates: Partial<Room>) => void;
+  addRoom: (room: Room) => void;
+  removeRoom: (id: string) => void;
   addFurniture: (item: FurnitureItem) => void;
   updateFurniture: (id: string, updates: Partial<FurnitureItem>) => void;
   removeFurniture: (id: string) => void;
@@ -33,6 +35,14 @@ export const useHouseStore = create<HouseState>()(
       updateRoom: (id, updates) =>
         set((state) => ({
           rooms: state.rooms.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+        })),
+
+      addRoom: (room) => set((state) => ({ rooms: [...state.rooms, room] })),
+
+      removeRoom: (id) =>
+        set((state) => ({
+          rooms: state.rooms.filter((r) => r.id !== id),
+          selectedRoomId: null,
         })),
 
       addFurniture: (item) => set((state) => ({ furniture: [...state.furniture, item] })),

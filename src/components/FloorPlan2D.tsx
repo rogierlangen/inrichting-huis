@@ -6,6 +6,8 @@ function polygonToPoints(points: { x: number; y: number }[], pxPerMeter: number)
   return points.map((p) => `${p.x * pxPerMeter},${p.y * pxPerMeter}`).join(' ');
 }
 
+const ROOM_COLORS = ['#f3c98f', '#cfe8d8', '#cfe0ef', '#f1e4c2', '#e3e3e3', '#d8cdb8', '#f6d98a'];
+
 export function FloorPlan2D() {
   const {
     activeFloorId,
@@ -18,6 +20,8 @@ export function FloorPlan2D() {
     selectedRoomId,
     updateFurniture,
     setFloorImage,
+    addRoom,
+    removeRoom,
   } = useHouseStore();
 
   const svgRef = useRef<SVGSVGElement>(null);
@@ -26,6 +30,8 @@ export function FloorPlan2D() {
   const [calPoints, setCalPoints] = useState<{ x: number; y: number }[]>([]);
   const [showRooms, setShowRooms] = useState(true);
   const [pxPerMeter, setPxPerMeter] = useState(60);
+  const [drawingRoom, setDrawingRoom] = useState(false);
+  const [drawPoints, setDrawPoints] = useState<{ x: number; y: number }[]>([]);
 
   const floorRooms = useMemo(() => rooms.filter((r) => r.floorId === activeFloorId), [rooms, activeFloorId]);
   const floorFurniture = useMemo(
@@ -35,7 +41,7 @@ export function FloorPlan2D() {
   const floorImage = images.find((i) => i.floorId === activeFloorId);
 
   const bounds = useMemo(() => {
-    const allPoints = floorRooms.flatMap((r) => r.points);
+    const allPoints = floorRooms.flatMap((r) => r.points).concat(drawPoints);
     if (floorImage) {
       allPoints.push(
         { x: floorImage.x, y: floorImage.y },
@@ -49,7 +55,7 @@ export function FloorPlan2D() {
       maxX: Math.max(...allPoints.map((p) => p.x)) + 1,
       maxY: Math.max(...allPoints.map((p) => p.y)) + 1,
     };
-  }, [floorRooms, floorImage]);
+  }, [floorRooms, floorImage, drawPoints]);
 
   const width = (bounds.maxX - bounds.minX) * pxPerMeter;
   const height = (bounds.maxY - bounds.minY) * pxPerMeter;
@@ -86,6 +92,42 @@ export function FloorPlan2D() {
       img.src = src;
     };
     reader.readAsDataURL(file);
+  }
+
+  function handleDrawClick(clientX: number, clientY: number) {
+    const p = toLocalMeters(clientX, clientY);
+    setDrawPoints((prev) => [...prev, p]);
+  }
+
+  function finishRoom() {
+    if (drawPoints.length < 3) {
+      setDrawPoints([]);
+      setDrawingRoom(false);
+      return;
+    }
+    const name = window.prompt('Naam van de kamer?', 'Kamer');
+    if (!name) {
+      setDrawPoints([]);
+      setDrawingRoom(false);
+      return;
+    }
+    const heightStr = window.prompt('Wandhoogte in meters?', '2.5');
+    const wallHeight = heightStr ? parseFloat(heightStr) : 2.5;
+    addRoom({
+      id: crypto.randomUUID(),
+      name,
+      floorId: activeFloorId,
+      points: drawPoints,
+      wallHeight: Number.isFinite(wallHeight) && wallHeight > 0 ? wallHeight : 2.5,
+      color: ROOM_COLORS[floorRooms.length % ROOM_COLORS.length],
+    });
+    setDrawPoints([]);
+    setDrawingRoom(false);
+  }
+
+  function cancelDrawing() {
+    setDrawPoints([]);
+    setDrawingRoom(false);
   }
 
   function handleCalibrationClick(clientX: number, clientY: number) {
@@ -141,6 +183,19 @@ export function FloorPlan2D() {
             Kamer-vlakken tonen
           </label>
         )}
+        {!drawingRoom && (
+          <button onClick={() => setDrawingRoom(true)}>Kamer tekenen</button>
+        )}
+        {drawingRoom && (
+          <>
+            <span style={{ fontSize: 13 }}>Klik de hoekpunten van de kamer, dan "Klaar"...</span>
+            <button onClick={finishRoom} disabled={drawPoints.length < 3}>Klaar</button>
+            <button onClick={cancelDrawing}>Annuleren</button>
+          </>
+        )}
+        {selectedRoomId && (
+          <button onClick={() => removeRoom(selectedRoomId)}>Kamer verwijderen</button>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
           <button onClick={() => setPxPerMeter((z) => Math.max(10, z - 10))}>−</button>
           <span style={{ fontSize: 13 }}>{Math.round((pxPerMeter / 60) * 100)}%</span>
@@ -155,8 +210,13 @@ export function FloorPlan2D() {
         onPointerUp={() => setDrag(null)}
         onClick={(e) => {
           if (calibrating) handleCalibrationClick(e.clientX, e.clientY);
+          else if (drawingRoom) handleDrawClick(e.clientX, e.clientY);
         }}
-        style={{ background: '#fafafa', border: '1px solid #ccc', cursor: calibrating ? 'crosshair' : 'default' }}
+        style={{
+          background: '#fafafa',
+          border: '1px solid #ccc',
+          cursor: calibrating || drawingRoom ? 'crosshair' : 'default',
+        }}
       >
         {floorImage && (
           <image
@@ -219,6 +279,32 @@ export function FloorPlan2D() {
             </g>
           );
         })}
+
+        {drawingRoom && drawPoints.length > 0 && (
+          <g>
+            {drawPoints.length > 1 && (
+              <polyline
+                points={polygonToPoints(
+                  drawPoints.map((p) => ({ x: p.x - bounds.minX, y: p.y - bounds.minY })),
+                  pxPerMeter
+                )}
+                fill="none"
+                stroke="#1a73e8"
+                strokeWidth={2}
+                strokeDasharray="6,4"
+              />
+            )}
+            {drawPoints.map((p, idx) => (
+              <circle
+                key={idx}
+                cx={(p.x - bounds.minX) * pxPerMeter}
+                cy={(p.y - bounds.minY) * pxPerMeter}
+                r={4}
+                fill="#1a73e8"
+              />
+            ))}
+          </g>
+        )}
       </svg>
     </div>
   );

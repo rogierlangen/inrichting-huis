@@ -1,8 +1,8 @@
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { useHouseStore } from '../store/useHouseStore';
 import * as THREE from 'three';
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { Room, FurnitureItem, Floor, FloorPlanImage } from '../types/model';
 
 function FloorPlanTexture({ image, elevation }: { image: FloorPlanImage; elevation: number }) {
@@ -20,7 +20,21 @@ function FloorPlanTexture({ image, elevation }: { image: FloorPlanImage; elevati
   );
 }
 
-function RoomMesh({ room, elevation }: { room: Room; elevation: number }) {
+function roomCentroid(room: Room) {
+  const x = room.points.reduce((s, p) => s + p.x, 0) / room.points.length;
+  const y = room.points.reduce((s, p) => s + p.y, 0) / room.points.length;
+  return { x, y };
+}
+
+function RoomMesh({
+  room,
+  elevation,
+  onFocus,
+}: {
+  room: Room;
+  elevation: number;
+  onFocus: (target: THREE.Vector3, position: THREE.Vector3) => void;
+}) {
   const shape = useMemo(() => {
     const s = new THREE.Shape();
     room.points.forEach((p, i) => {
@@ -43,8 +57,24 @@ function RoomMesh({ room, elevation }: { room: Room; elevation: number }) {
     return segments;
   }, [room.points]);
 
+  function handleClick(e: { stopPropagation: () => void }) {
+    e.stopPropagation();
+    const centroid = roomCentroid(room);
+    const target = new THREE.Vector3(centroid.x, elevation + room.wallHeight / 3, centroid.y);
+    const radius = Math.max(
+      3,
+      ...room.points.map((p) => Math.hypot(p.x - centroid.x, p.y - centroid.y) * 2.2)
+    );
+    const position = new THREE.Vector3(
+      centroid.x + radius,
+      elevation + room.wallHeight * 1.2,
+      centroid.y + radius
+    );
+    onFocus(target, position);
+  }
+
   return (
-    <group position={[0, elevation, 0]}>
+    <group position={[0, elevation, 0]} onClick={handleClick}>
       <mesh geometry={floorGeometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <meshStandardMaterial color={room.color ?? '#ddd'} side={THREE.DoubleSide} />
       </mesh>
@@ -80,7 +110,13 @@ function FurnitureMesh({ item, elevation }: { item: FurnitureItem; elevation: nu
   );
 }
 
-function FloorGroup({ floor }: { floor: Floor }) {
+function FloorGroup({
+  floor,
+  onFocusRoom,
+}: {
+  floor: Floor;
+  onFocusRoom: (target: THREE.Vector3, position: THREE.Vector3) => void;
+}) {
   const rooms = useHouseStore((s) => s.rooms.filter((r) => r.floorId === floor.id));
   const furniture = useHouseStore((s) => s.furniture.filter((f) => f.floorId === floor.id));
   const floorImage = useHouseStore((s) => s.images.find((i) => i.floorId === floor.id));
@@ -88,8 +124,9 @@ function FloorGroup({ floor }: { floor: Floor }) {
   return (
     <group>
       {floorImage && <FloorPlanTexture image={floorImage} elevation={floor.elevation} />}
-      {!floorImage &&
-        rooms.map((room) => <RoomMesh key={room.id} room={room} elevation={floor.elevation} />)}
+      {rooms.map((room) => (
+        <RoomMesh key={room.id} room={room} elevation={floor.elevation} onFocus={onFocusRoom} />
+      ))}
       {furniture.map((item) => (
         <FurnitureMesh key={item.id} item={item} elevation={floor.elevation} />
       ))}
@@ -97,18 +134,59 @@ function FloorGroup({ floor }: { floor: Floor }) {
   );
 }
 
+function CameraRig({
+  controlsRef,
+  focus,
+}: {
+  controlsRef: React.RefObject<any>;
+  focus: { target: THREE.Vector3; position: THREE.Vector3 } | null;
+}) {
+  const progress = useRef(0);
+  const start = useRef<{ target: THREE.Vector3; position: THREE.Vector3 } | null>(null);
+
+  useFrame((state: any) => {
+    if (!focus || !controlsRef.current) return;
+    if (progress.current === 0) {
+      start.current = {
+        target: controlsRef.current.target.clone(),
+        position: state.camera.position.clone(),
+      };
+    }
+    if (progress.current < 1) {
+      progress.current = Math.min(1, progress.current + 0.04);
+      const t = progress.current;
+      if (start.current) {
+        controlsRef.current.target.lerpVectors(start.current.target, focus.target, t);
+        state.camera.position.lerpVectors(start.current.position, focus.position, t);
+      }
+      controlsRef.current.update();
+    }
+  });
+
+  return null;
+}
+
 export function House3D() {
   const floors = useHouseStore((s) => s.floors);
+  const controlsRef = useRef<any>(null);
+  const [focus, setFocus] = useState<{ target: THREE.Vector3; position: THREE.Vector3 } | null>(null);
+  const [focusKey, setFocusKey] = useState(0);
+
+  function handleFocusRoom(target: THREE.Vector3, position: THREE.Vector3) {
+    setFocus({ target, position });
+    setFocusKey((k) => k + 1);
+  }
 
   return (
     <Canvas camera={{ position: [12, 12, 12], fov: 50 }} shadows>
       <ambientLight intensity={0.6} />
       <directionalLight position={[10, 15, 5]} intensity={0.8} castShadow />
       {floors.map((floor) => (
-        <FloorGroup key={floor.id} floor={floor} />
+        <FloorGroup key={floor.id} floor={floor} onFocusRoom={handleFocusRoom} />
       ))}
       <gridHelper args={[40, 40]} />
-      <OrbitControls />
+      <OrbitControls ref={controlsRef} />
+      <CameraRig key={focusKey} controlsRef={controlsRef} focus={focus} />
     </Canvas>
   );
 }
