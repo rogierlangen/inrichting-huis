@@ -1,0 +1,131 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f4f4f4;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 20px;
+  background: #1f2933;
+  color: white;
+}
+
+.app-header h1 {
+  font-size: 16px;
+  margin: 0;
+  flex: 1;
+}
+
+.view-toggle button,
+.floor-select button {
+  background: #364352;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  margin-right: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.view-toggle button.active,
+.floor-select button.active {
+  background: #1a73e8;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.viewport {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.floorplan2d {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.toolbar button,
+.upload-btn {
+  background: #1a73e8;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.furniture-panel {
+  width: 240px;
+  background: white;
+  border-left: 1px solid #ddd;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.furniture-panel h3 {
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preset-list button {
+  text-align: left;
+  background: #eef2f7;
+  border: 1px solid #d3dae3;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.selected-furniture {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.selected-furniture label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  margin-bottom: 8px;
+  gap: 4px;
+}
+
+.selected-furniture button {
+  background: #d32f2f;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
