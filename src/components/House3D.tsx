@@ -82,9 +82,7 @@ function FurnitureMesh({ item, elevation }: { item: FurnitureItem; elevation: nu
 
 function FloorGroup({ floor }: { floor: Floor }) {
   const rooms = useHouseStore((s) => s.rooms.filter((r) => r.floorId === floor.id));
-  const furniture = useHouseStore((s) =>
-    s.furniture.filter((f) => rooms.some((r) => r.id === f.roomId))
-  );
+  const furniture = useHouseStore((s) => s.furniture.filter((f) => f.floorId === floor.id));
   const floorImage = useHouseStore((s) => s.images.find((i) => i.floorId === floor.id));
 
   return (

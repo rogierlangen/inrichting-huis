@@ -30,8 +30,8 @@ export function FloorPlan2D() {
 
   const floorRooms = useMemo(() => rooms.filter((r) => r.floorId === activeFloorId), [rooms, activeFloorId]);
   const floorFurniture = useMemo(
-    () => furniture.filter((f) => floorRooms.some((r) => r.id === f.roomId)),
-    [furniture, floorRooms]
+    () => furniture.filter((f) => f.floorId === activeFloorId),
+    [furniture, activeFloorId]
   );
   const floorImage = images.find((i) => i.floorId === activeFloorId);
 

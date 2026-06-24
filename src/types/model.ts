@@ -14,7 +14,7 @@ export interface Room {
 
 export interface FurnitureItem {
   id: string;
-  roomId: string;
+  floorId: string;
   name: string;
   x: number;
   y: number;

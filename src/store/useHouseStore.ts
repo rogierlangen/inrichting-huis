@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { FloorPlanImage, FurnitureItem, HouseModel, Room } from '../types/model';
 import { initialModel } from '../data/initialModel';
 
@@ -17,38 +18,43 @@ interface HouseState extends HouseModel {
   loadModel: (model: HouseModel) => void;
 }
 
-export const useHouseStore = create<HouseState>((set) => ({
-  ...initialModel,
-  activeFloorId: initialModel.floors[0].id,
-  selectedRoomId: null,
-  selectedFurnitureId: null,
-
-  setActiveFloor: (floorId) => set({ activeFloorId: floorId, selectedRoomId: null, selectedFurnitureId: null }),
-  selectRoom: (id) => set({ selectedRoomId: id, selectedFurnitureId: null }),
-  selectFurniture: (id) => set({ selectedFurnitureId: id, selectedRoomId: null }),
-
-  updateRoom: (id, updates) =>
-    set((state) => ({
-      rooms: state.rooms.map((r) => (r.id === id ? { ...r, ...updates } : r)),
-    })),
-
-  addFurniture: (item) => set((state) => ({ furniture: [...state.furniture, item] })),
-
-  updateFurniture: (id, updates) =>
-    set((state) => ({
-      furniture: state.furniture.map((f) => (f.id === id ? { ...f, ...updates } : f)),
-    })),
-
-  removeFurniture: (id) =>
-    set((state) => ({
-      furniture: state.furniture.filter((f) => f.id !== id),
+export const useHouseStore = create<HouseState>()(
+  persist(
+    (set) => ({
+      ...initialModel,
+      activeFloorId: initialModel.floors[0].id,
+      selectedRoomId: null,
       selectedFurnitureId: null,
-    })),
 
-  setFloorImage: (image) =>
-    set((state) => ({
-      images: [...state.images.filter((i) => i.floorId !== image.floorId), image],
-    })),
+      setActiveFloor: (floorId) => set({ activeFloorId: floorId, selectedRoomId: null, selectedFurnitureId: null }),
+      selectRoom: (id) => set({ selectedRoomId: id, selectedFurnitureId: null }),
+      selectFurniture: (id) => set({ selectedFurnitureId: id, selectedRoomId: null }),
 
-  loadModel: (model) => set({ ...model, activeFloorId: model.floors[0]?.id ?? '' }),
-}));
+      updateRoom: (id, updates) =>
+        set((state) => ({
+          rooms: state.rooms.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+        })),
+
+      addFurniture: (item) => set((state) => ({ furniture: [...state.furniture, item] })),
+
+      updateFurniture: (id, updates) =>
+        set((state) => ({
+          furniture: state.furniture.map((f) => (f.id === id ? { ...f, ...updates } : f)),
+        })),
+
+      removeFurniture: (id) =>
+        set((state) => ({
+          furniture: state.furniture.filter((f) => f.id !== id),
+          selectedFurnitureId: null,
+        })),
+
+      setFloorImage: (image) =>
+        set((state) => ({
+          images: [...state.images.filter((i) => i.floorId !== image.floorId), image],
+        })),
+
+      loadModel: (model) => set({ ...model, activeFloorId: model.floors[0]?.id ?? '' }),
+    }),
+    { name: 'inrichting-huis-model' }
+  )
+);

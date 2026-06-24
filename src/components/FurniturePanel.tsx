@@ -10,23 +10,19 @@ const PRESETS = [
 ];
 
 export function FurniturePanel() {
-  const { rooms, activeFloorId, selectedFurnitureId, furniture, addFurniture, updateFurniture, removeFurniture } =
+  const { activeFloorId, images, selectedFurnitureId, furniture, addFurniture, updateFurniture, removeFurniture } =
     useHouseStore();
 
-  const floorRooms = rooms.filter((r) => r.floorId === activeFloorId);
   const selected = furniture.find((f) => f.id === selectedFurnitureId);
+  const floorImage = images.find((i) => i.floorId === activeFloorId);
 
   function handleAdd(preset: (typeof PRESETS)[number]) {
-    const room = floorRooms[0];
-    if (!room) return;
-    const cx = room.points.reduce((s, p) => s + p.x, 0) / room.points.length;
-    const cy = room.points.reduce((s, p) => s + p.y, 0) / room.points.length;
     addFurniture({
       id: crypto.randomUUID(),
-      roomId: room.id,
+      floorId: activeFloorId,
+      x: floorImage ? floorImage.x + floorImage.width / 2 : 0,
+      y: floorImage ? floorImage.y + floorImage.height / 2 : 0,
       name: preset.name,
-      x: cx,
-      y: cy,
       width: preset.width,
       depth: preset.depth,
       height: preset.height,
